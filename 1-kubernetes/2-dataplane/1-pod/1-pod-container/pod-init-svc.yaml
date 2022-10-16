@@ -1,0 +1,21 @@
+# Init 容器将会等待至发现名称为 mydb 和 myservice 的 Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myservice-pod-init
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mydb-pod-init
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9377

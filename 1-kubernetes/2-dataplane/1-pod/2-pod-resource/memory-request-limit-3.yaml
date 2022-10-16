@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-demo-3
+  namespace: 1-kubernetes
+spec:
+  containers:
+  - name: memory-demo-3-ctr
+    image: polinux/stress
+    resources:
+      limits:
+        memory: "1000Gi"
+      # 超过整个节点容量的内存,Pod 处于 PENDING 状态
+      requests:
+        memory: "1000Gi"
+    command: ["stress"]
+    args: ["--vm", "1", "--vm-bytes", "150M", "--vm-hang", "1"]

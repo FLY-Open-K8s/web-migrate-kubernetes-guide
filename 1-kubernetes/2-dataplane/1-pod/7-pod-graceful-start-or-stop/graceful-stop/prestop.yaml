@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prestop-demo
+spec:
+  containers:
+    - image: nginx
+      name: nginx-container
+      resources: {}
+      ports:
+        - containerPort: 80
+      lifecycle:
+        preStop:
+          exec:
+            command:
+              - sh
+              - -c
+              - echo "Stopping container now..." >/proc/1/fd/1 && nginx -s stop
+  dnsPolicy: Default

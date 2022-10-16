@@ -1,0 +1,97 @@
+## 创建机器人账户，用来给 k8s 从一个私有项目拉取镜像
+
+- 登录 Harbor
+- 进入一个私有项目
+- 点击机器人账户页签，添加一个机器人账号
+- 输入名称如 test，可以勾选永不过期，权限只需要拉取权限就够了，保存
+
+保存后生成一个为 **robot$test** 的机器人账号和对应的令牌，保存成文件待用。
+
+## 创建 imagePullSecrets
+
+- 方式一：使用命令直接创建
+  harbor-registry-key 是要创建的 secrets 的名称，这里叫 harbor-registry-key
+  docker-server 对应 Harbor 仓库地址
+  docker-username 是上面的 robot$test
+  docker-password 是 robot$test 对应的令牌 token
+
+  ```bash
+  kubectl create secret docker-registry harbor-registry-key --docker-server=10.104.6.214 --docker-username=robot$test --docker-password=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1OTIzMDA1MTQsImlzcyI6ImhhcmJvci10b2tlbi1kZWZhdWx0SXNzdWVyIiwiaWQiOjQsInBpZCI6MiwiYWNjZXNzIjpbeyJSZXNvdXJjZSI6Ii9wcm9qZWN0LzIvcmVwb3NpdG9yeSIsIkFjdGlvbiI6InB1bGwiLCJFZmZlY3QiOiIifV19.sSUxZjxElPHxIlwK7d9yxQ6YpD29mKywXkf5poJeFDdFiDdz3QiNhwlrIcUAX0kt2-j7aeEOnO0mtlmCYRVCgKDQkPLNe3M6O_NN73_HSUWuZyJGGus--nTTe3J2uqFnrN1q9CFtYlhGcuoRPteqoeG4mHwjvnNfpvLAvQZI2Zz2iRG4Nob-5VcBZ0xzyY5oRC3TT0gImLAPQcwZ3ftSccLhXaAJGE2wlrzfWm3UBfAiN_JAhSvlNLX2sg_69YysQmNdwXGYZysTd-xrGl8pihs53CEqQtP_3-KuO1k07qSoG3O85F0qly0CivdIzD2HRJjQ4JrKFY24BiQf7syIvulygYIahYgNY8OF3giCF0q1jY0eg8qFBGAYa4M3KH7aOy_XsJbpHQgLat88lr6se0nWH16OLkRwtHMHvaAjDLm-EWfCMEV7mJgH2lrByqEpuUd5MApMuWoTwR6paNDjlRDunnshYEuy9V3xzcbJwOS4eCGWkGBGyL6vy41Xf87TCDIzKDiH3c4aUueaStlDbRpwPJHHGUpxqontids-YxH5TBf6Bz7mZt9iqdf1aU91bQgwfkmULFo-AqwFF0d5XfsNbAg3-owySgjj3CdT8bkgEj1zh70K8qxjrUMw7gNZLnEyCwVvDEdJKN0b7ZWXnRUezpkQdJs5jLEnifVxF8I
+  ```
+
+- 方式二：使用 `~/.docker/config.json` 创建
+
+使用 docker login 登录 Harbor,生成 .docker/config.json
+
+```bash
+[root@test-10-104-6-215 ~]# docker login 10.104.6.214
+Username:  robot$test
+Password:
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+```
+
+将文件内容转成 base64 输出
+
+```bash
+[root@test-10-104-6-215 ~]# cat ~/.docker/config.json |base64 -w 0
+ewoJImF1dGhzIjogewoJCSIxMC4xMDQuNi4yMTQiOiB7CgkJCSJhdXRoIjogImNtOWliM1FrZEdWemREcGxlVXBvWWtkamFVOXBTbE5WZWtreFRtbEpjMGx1VWpWalEwazJTV3R3V0ZaRFNqa3VaWGxLY0ZsWVVXbFBha1V4VDFSSmVrMUVRVEZOVkZGelNXMXNlbU41U1RaSmJXaG9ZMjFLZG1OcE1UQmlNblJzWW1reGExcFhXbWhrVjNnd1UxaE9lbVJYVm5sSmFYZHBZVmRSYVU5cVVYTkpia0p3V2tOSk5rMXBkMmxaVjA1cVdsaE9la2xxY0dKbGVVcFRXbGhPZG1SWVNtcGFVMGsyU1drNWQyTnRPWEZhVjA0d1RIcEpkbU50Vm5kaU0wNXdaRWM1ZVdWVFNYTkphMFpxWkVkc2RtSnBTVFpKYmtJeFlrZDNhVXhEU2taYWJWcHNXVE5SYVU5cFNXbG1WakU1TG5OVFZYaGFhbmhGYkZCSWVFbHNkMHMzWkRsNWVGRTJXWEJFTWpsdFMzbDNXR3RtTlhCdlNtVkdSR1JHYVVSa2VqTlJhVTVvZDJ4eVNXTlZRVmd3YTNReUxXbzNZV1ZGVDI1UE1HMTBiRzFEV1ZKV1EyZExSRkZyVUV4T1pUTk5OazlmVGs0M00xOUlVMVZYZFZwNVNrZEhkWE10TFc1VVZHVXpTakoxY1VadWNrNHhjVGxEUm5SWmJHaEhZM1Z2VWxCMFpYRnZaVWMwYlVoM2FuWnVUbVp3ZGt4QmRsRmFTVEphZWpKcFVrYzBUbTlpTFRWV1kwSmFNSGg2ZVZrMWIxSkRNMVJVTUdkSmJVeEJVRkZqZDFvelpuUlRZMk5NYUZoaFFVcEhSVEozYkhKNlpsZHRNMVZDWmtGcFRsOUtRV2hUZG14T1RGZ3ljMmRmTmpsWmVYTlJiVTVrZDFoSFdWcDVjMVJrTFhoeVIydzRjR2xvY3pVelEwVnhVWFJRWHpNdFMzVlBNV3N3TjNGVGIwY3pUemcxUmpCeGJIa3dRMmwyWkVsNlJESklVa3BxVVRSS2NrdEdXVEkwUW1sUlpqZHplVWwyZFd4NVoxbEpZV2haWjA1Wk9FOUdNMmRwUTBZd2NURnFXVEJsWnpoeFJrSkhRVmxoTkUwelMwZzNZVTk1WDFoelNtSndTRkZuVEdGME9EaHNjalp6WlRCdVYwZ3hOazlNYTFKM2RFaE5TSFpoUVdwRVRHMHRSVmRtUTAxRlZqZHRTbWRJTW14eVFubHhSWEIxVldRMVRVRndUWFZYYjFSM1VqWndZVTVFYW14U1JIVnVibk5vV1VWMWVUbFdNM2g2WTJKS2QwOVROR1ZEUjFkclIwSkhlVXcyZG5rME1WaG1PRGRVUTBSSmVrdEVhVWd6WXpSaFZYVmxZVk4wYkVSaVVuQjNVRXBJU0VkVmNIaHhiMjUwYVdSekxWbDRTRFZVUW1ZMlFubzNiVnAwT1dseFpHWXhZVlU1TVdKUlozZG1hMjFWVEVadkxVRnhkMFpHTUdRMVdHWnpUbUpCWnpNdGIzZDVVMmRxYWpORFpGUTRZbXRuUldveGVtZzNNRXM0Y1hocWNsVk5kemRuVGxwTWJrVjVRM2RXZGtSRlpFcExUakJpTjFwWFdHNVNWV1Y2Y0d0UlpFcHpOV3BNUlc1cFpsWjRSamhKIgoJCX0KCX0sCgkiSHR0cEhlYWRlcnMiOiB7CgkJIlVzZXItQWdlbnQiOiAiRG9ja2VyLUNsaWVudC8xOS4wMy44IChsaW51eCkiCgl9Cn0=
+```
+
+创建 secret.yaml 文件，内容如下，.dockerconfigjson 的值为上面输出的内容
+
+```bash
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-registry-key
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSIxMC4xMDQuNi4yMTQiOiB7CgkJCSJhdXRoIjogImNtOWliM1FrZEdWemREcGxlVXBvWWtkamFVOXBTbE5WZWtreFRtbEpjMGx1VWpWalEwazJTV3R3V0ZaRFNqa3VaWGxLY0ZsWVVXbFBha1V4VDFSSmVrMUVRVEZOVkZGelNXMXNlbU41U1RaSmJXaG9ZMjFLZG1OcE1UQmlNblJzWW1reGExcFhXbWhrVjNnd1UxaE9lbVJYVm5sSmFYZHBZVmRSYVU5cVVYTkpia0p3V2tOSk5rMXBkMmxaVjA1cVdsaE9la2xxY0dKbGVVcFRXbGhPZG1SWVNtcGFVMGsyU1drNWQyTnRPWEZhVjA0d1RIcEpkbU50Vm5kaU0wNXdaRWM1ZVdWVFNYTkphMFpxWkVkc2RtSnBTVFpKYmtJeFlrZDNhVXhEU2taYWJWcHNXVE5SYVU5cFNXbG1WakU1TG5OVFZYaGFhbmhGYkZCSWVFbHNkMHMzWkRsNWVGRTJXWEJFTWpsdFMzbDNXR3RtTlhCdlNtVkdSR1JHYVVSa2VqTlJhVTVvZDJ4eVNXTlZRVmd3YTNReUxXbzNZV1ZGVDI1UE1HMTBiRzFEV1ZKV1EyZExSRkZyVUV4T1pUTk5OazlmVGs0M00xOUlVMVZYZFZwNVNrZEhkWE10TFc1VVZHVXpTakoxY1VadWNrNHhjVGxEUm5SWmJHaEhZM1Z2VWxCMFpYRnZaVWMwYlVoM2FuWnVUbVp3ZGt4QmRsRmFTVEphZWpKcFVrYzBUbTlpTFRWV1kwSmFNSGg2ZVZrMWIxSkRNMVJVTUdkSmJVeEJVRkZqZDFvelpuUlRZMk5NYUZoaFFVcEhSVEozYkhKNlpsZHRNMVZDWmtGcFRsOUtRV2hUZG14T1RGZ3ljMmRmTmpsWmVYTlJiVTVrZDFoSFdWcDVjMVJrTFhoeVIydzRjR2xvY3pVelEwVnhVWFJRWHpNdFMzVlBNV3N3TjNGVGIwY3pUemcxUmpCeGJIa3dRMmwyWkVsNlJESklVa3BxVVRSS2NrdEdXVEkwUW1sUlpqZHplVWwyZFd4NVoxbEpZV2haWjA1Wk9FOUdNMmRwUTBZd2NURnFXVEJsWnpoeFJrSkhRVmxoTkUwelMwZzNZVTk1WDFoelNtSndTRkZuVEdGME9EaHNjalp6WlRCdVYwZ3hOazlNYTFKM2RFaE5TSFpoUVdwRVRHMHRSVmRtUTAxRlZqZHRTbWRJTW14eVFubHhSWEIxVldRMVRVRndUWFZYYjFSM1VqWndZVTVFYW14U1JIVnVibk5vV1VWMWVUbFdNM2g2WTJKS2QwOVROR1ZEUjFkclIwSkhlVXcyZG5rME1WaG1PRGRVUTBSSmVrdEVhVWd6WXpSaFZYVmxZVk4wYkVSaVVuQjNVRXBJU0VkVmNIaHhiMjUwYVdSekxWbDRTRFZVUW1ZMlFubzNiVnAwT1dseFpHWXhZVlU1TVdKUlozZG1hMjFWVEVadkxVRnhkMFpHTUdRMVdHWnpUbUpCWnpNdGIzZDVVMmRxYWpORFpGUTRZbXRuUldveGVtZzNNRXM0Y1hocWNsVk5kemRuVGxwTWJrVjVRM2RXZGtSRlpFcExUakJpTjFwWFdHNVNWV1Y2Y0d0UlpFcHpOV3BNUlc1cFpsWjRSamhKIgoJCX0KCX0sCgkiSHR0cEhlYWRlcnMiOiB7CgkJIlVzZXItQWdlbnQiOiAiRG9ja2VyLUNsaWVudC8xOS4wMy44IChsaW51eCkiCgl9Cn0=
+```
+
+创建 Secrets
+
+```bash
+kubectl create -f secret.yaml
+```
+
+### 使用 Secrets
+
+创建 deployment.yaml，内容如下
+
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:  
+        app: nginx-app
+    spec:
+      containers:
+      - name: nginx-app
+        image: 10.104.6.214/nginx:alpine # 使用 Harbor 上的镜像
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80 
+      imagePullSecrets:
+      - name: harbor-registry-key # 使用刚刚创建的 Harbor Secrets
+```
+
+执行部署
+
+```bash
+kubectl create -f deployment.yaml
+```
+
+> 如果没有成功，检查 deployment 与 创建 Secrets 的 namespace 是否相同

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: 1-configmap
+metadata:
+  name: busybox-users
+  namespace: default
+immutable: true
+data:
+  GUEST_USER: busybox
+  ROOT_USER: admin

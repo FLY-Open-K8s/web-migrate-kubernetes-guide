@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-container-init
+  labels:
+    app: myapp
+spec:
+  containers:
+    - name: myapp-container
+      image: busybox:1.28
+      #  3.一旦这两个 Init容器 都启动完成，Pod 将启动 spec 节中的应用容器。
+      command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+    - name: init-myservice
+      image: busybox:1.28
+      #  1. 第一个等待 myservice 启动，
+      command: ['sh', '-c', "until nslookup myservice-pod-init.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice-pod-init; sleep 2; done"]
+    - name: init-mydb
+      #  2. 第二个等待 mydb 启动
+      image: busybox:1.28
+      command: ['sh', '-c', "until nslookup mydb-pod-init.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb-pod-init; sleep 2; done"]

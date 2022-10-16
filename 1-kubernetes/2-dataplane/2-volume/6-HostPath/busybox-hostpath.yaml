@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: busybox
+  name: busybox-hostpath
+spec:
+  containers:
+  - image: busybox:1.28.3
+    imagePullPolicy: IfNotPresent
+    name: busybox
+    command:
+    - "sleep"
+    - "3600"
+    resources: {}
+    volumeMounts:
+    - name: tmp
+      mountPath: /cache
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  volumes:
+  - name: tmp
+    hostPath:
+      path: /tmp/hostPath
+      # 如果在给定路径上什么都不存在，那么将根据需要创建空目录，权限设置为 0755，具有与 kubelet 相同的组和属主信息。
+      type: DirectoryOrCreate

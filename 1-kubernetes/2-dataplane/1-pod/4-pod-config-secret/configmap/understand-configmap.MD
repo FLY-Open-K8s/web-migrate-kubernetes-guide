@@ -1,0 +1,17 @@
+# ConfigMap
+
+```sh
+cat game.properties
+
+#configmap from file
+kubectl create configmap game-config --from-file=game.properties
+kubectl create configmap game-env-config --from-env-file=game.properties
+kubectl get configmap -oyaml game-config
+```
+
+## ConfigMap from literal
+
+```sh
+kubectl create configmap special-config --from-literal=special.how=very --from-literal=special.type=charm
+
+```

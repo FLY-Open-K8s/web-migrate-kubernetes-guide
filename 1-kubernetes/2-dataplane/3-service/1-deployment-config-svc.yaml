@@ -1,0 +1,69 @@
+# 1. 启动一个 nginx Deployment。
+# 2. nginx 的启动配置从外部的配置文件 Mount 进 Pod。
+# 3. 进入 Pod 查看 nginx 进程和配置。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-fly
+spec:
+   selector:
+      matchLabels:
+         app: nginx-fly
+   replicas: 5
+   template:
+      metadata:
+         labels:
+            app: nginx-fly
+      spec:
+         containers:
+            - name: nginx
+              image: nginx:1.14.2
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 80
+                   name: port
+                   protocol: TCP
+              volumeMounts:
+                - name: nginx-cm
+                   mountPath: "/etc/nginx/conf.d"
+         volumes:
+            - name: nginx-cm
+               configMap:
+                  name: nginx-cm
+
+---
+apiVersion: v1
+kind: 1-configmap
+metadata:
+   name: nginx-cm
+data:
+   fly.conf: |-
+        server {
+           listen           80;
+           server_name   www.fly.com;
+           location / {
+              root     /usr/share/nginx/html;
+              index   index.html index.htm;
+           }
+           error_page     500 502 503 504   /50x.html;
+           location = /fly.html {
+              root     /usr/share/nginx/html;
+           }
+        }
+
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: nginx-inbound
+spec:
+   type: ClusterIP
+   ports:
+   - port: 80
+      protocol: TCP
+      targetPort: 80
+   selector:
+      app: nginx-fly

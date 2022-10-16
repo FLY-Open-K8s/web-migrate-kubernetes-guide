@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - nginx.example
+    secretName: example-tls
+  rules:
+  - host: "nginx.example"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: example
+            port:
+              number: 80
+

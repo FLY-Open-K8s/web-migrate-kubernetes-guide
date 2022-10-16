@@ -1,0 +1,27 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: liveness-exec
+spec:
+  containers:
+  - name: liveness
+    image: busybox:1.28.4
+    # 这个容器生命的前 30 秒，/tmp/healthy 文件是存在的。
+    # 所以在这最开始的 30 秒内，执行命令 cat /tmp/healthy 会返回成功代码。
+    # 30 秒之后，执行命令 cat /tmp/healthy 就会返回失败代码。
+    args:
+    - /bin/sh
+    - -c
+    - touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/healthy
+      #  initialDelaySeconds 字段告诉 kubelet 在执行第一次探测前应该等待 5 秒
+      initialDelaySeconds: 5
+      # periodSeconds 字段指定了 kubelet 应该每 5 秒执行一次存活探测
+      periodSeconds: 5
