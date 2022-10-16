@@ -1,16 +1,19 @@
 #!/bin/bash -e 
 
 #!bash
+#
 NS1="NS1"
 NS2="NS2"
-NODE_IP="192.168.0.10"
+
+# node1 ip info
+NODE_IP="10.6.6.213"
 BRIDGE_SUBNET="172.16.0.0/24"
 BRIDGE_IP="172.16.0.1"
 IP1="172.16.0.2"
 IP2="172.16.0.3"
 
-
-TO_NODE_IP="192.168.0.11"
+# node2 ip info
+TO_NODE_IP="10.6.6.214"
 TO_BRIDGE_SUBNET="172.16.1.0/24"
 TO_BRIDGE_IP="172.16.1.1"
 TO_IP1="172.16.1.2"
@@ -24,6 +27,7 @@ sudo ip netns add $NS2
 echo "Creating the veth pairs"
 sudo ip link add veth10 type veth peer name veth11
 sudo ip link add veth20 type veth peer name veth21
+# check veth
     ip link show type veth
         #ip link show veth11
         #ip link show veth20    
@@ -90,7 +94,7 @@ sudo ip netns exec $NS1 ping -W 1 -c 2 172.16.0.1
 sudo ip netns exec $NS1 ping -W 1 -c 2 172.16.0.3
 
 #Ping the other server (Ubuntu2)
-sudo ip netns exec $NS1 ping -W 1 -c 2 192.168.0.11
+sudo ip netns exec $NS1 ping -W 1 -c 2 10.6.6.214
 
 #Ping the bridge on "Ubuntu2" server
 sudo ip netns exec $NS1 ping -W 1 -c 2 172.16.1.1
