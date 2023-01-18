@@ -1,0 +1,16 @@
+[Unit]
+Description=Harbor
+After=docker.service
+Requires=docker.service
+Documentation=http://github.com/vmware/harbor
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StandardError=null
+StandardOutput=null
+ExecStart=/usr/local/sbin/docker-compose -f /opt/harbor/docker-compose.yml up -d --force-recreate
+ExecStop=/usr/local/sbin/docker-compose -f /opt/harbor/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target

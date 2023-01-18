@@ -1,0 +1,86 @@
+#!/bin/bash
+set -e
+
+# If compiling source code this dir is harbor's make dir.
+# If installing harbor via package, this dir is harbor's root dir.
+if [[ -n "$HARBOR_BUNDLE_DIR" ]]; then
+    harbor_prepare_path=$HARBOR_BUNDLE_DIR
+else
+    harbor_prepare_path="$( cd "$(dirname "$0")" ; pwd -P )"
+fi
+echo "prepare base dir is set to ${harbor_prepare_path}"
+
+# AI Custom Config
+HARBOR_NETWORK_CIDR=${1:-'172.252.0.1/16'}
+
+# Clean up input dir
+rm -rf ${harbor_prepare_path}/input
+# Create a input dirs
+mkdir -p ${harbor_prepare_path}/input
+input_dir=${harbor_prepare_path}/input
+
+# Copy harbor.yml to input dir
+if [[ ! "$1" =~ ^\-\- ]] && [ -f "$1" ]
+then
+    cp $1 $input_dir/harbor.yml
+    shift
+else
+    if [ -f "${harbor_prepare_path}/harbor.yml" ];then
+        cp ${harbor_prepare_path}/harbor.yml $input_dir/harbor.yml
+    else
+        echo "no config file: ${harbor_prepare_path}/harbor.yml"
+        exit 1
+    fi
+fi
+
+data_path=$(grep '^[^#]*data_volume:' $input_dir/harbor.yml | awk '{print $NF}')
+
+# If previous secretkeys exist, move it to new location
+previous_secretkey_path=/data/secretkey
+previous_defaultalias_path=/data/defaultalias
+
+if [ -f $previous_secretkey_path ]; then
+    mkdir -p $data_path/secret/keys
+    mv $previous_secretkey_path $data_path/secret/keys
+fi
+if [ -f $previous_defaultalias_path ]; then
+    mkdir -p $data_path/secret/keys
+    mv $previous_defaultalias_path $data_path/secret/keys
+fi
+
+
+# Create secret dir
+secret_dir=${data_path}/secret
+config_dir=$harbor_prepare_path/common/config
+
+# Run prepare script
+docker run --rm -v $input_dir:/input \
+                    -v $data_path:/data \
+                    -v $harbor_prepare_path:/compose_location \
+                    -v $config_dir:/config \
+                    -v /:/hostfs \
+                    --privileged \
+                    goharbor/prepare:v2.2.2 prepare
+#                    goharbor/prepare:v2.2.2 prepare $@
+
+echo "Clean up the input dir"
+# Clean up input dir
+rm -rf ${harbor_prepare_path}/input
+
+
+# AI Custom Config
+# Harbor 自定义网段
+if [ ! -z "${HARBOR_NETWORK_CIDR}" ]; then
+  # 是否存在harbor网桥
+  harbor_network=`docker network ls | grep harbor | awk '{print $1}'`
+  if [[ ! -z ${harbor_network} ]]; then
+    echo "Clean up docker network for harbor"
+    docker network ls | grep harbor | awk '{print $1}' | xargs -t docker network rm
+  fi
+
+  # 创建Harbor新的网桥
+  echo "Create docker network for harbor(${HARBOR_NETWORK_CIDR}) "
+  docker network create --driver=bridge --subnet=${HARBOR_NETWORK_CIDR} harbor
+  # 更新替换Habor-hostname
+  sed -i "s/external: false/external: true/" /opt/harbor/docker-compose.yml
+fi
