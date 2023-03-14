@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    taskId: tf-task-2303137912-alex-87738
+  name: tf-task-2303137912-alex-87738-p0
+  namespace: alex
+spec:
+  clusterIP: 10.108.173.70
+  ports:
+  - port: 2222
+  selector:
+    svcname: tf-task-2303137912-alex-87738-p0

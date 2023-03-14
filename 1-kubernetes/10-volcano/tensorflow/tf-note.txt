@@ -1,0 +1,5 @@
+# 环境变量
+/bin/cat /proc/1/environ | /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh
+
+# 作用?
+CUDA_VISIBLE_DEVICES

@@ -1,0 +1,182 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: tensorflow-volcano-sothisai
+spec:
+  minAvailable: 2
+  schedulerName: volcano
+  # 作业插件机制
+  plugins:
+    # env插件，提供任务索引。如下面Commond中的VK_TASK_INDEX
+    env: []
+    # SVC插件，支持作业内pod间互访，并提供访问地址。如下面Commond中的ps.host和worker.host
+    svc: []
+  # 异常场景处理：当有任意一个Pod被驱逐时，它处理的方式都是重启整个Job  
+  policies:
+    - event: PodEvicted
+      action: RestartJob
+  queue: default
+  # 作业的task角色
+  tasks:
+    - replicas: 1
+      name: ps
+      template:
+        spec:
+          containers:
+            # HOST声明ps和worker任务通信时采用的host,由svc插件创建
+            - command:
+                - /bin/sh
+                - -c
+                - PS_HOST=`cat /etc/volcano/ps.host | sed 's/$/&:2222/g' | sed 's/^/"/;s/$/"/' | tr "\n" ","`;
+                  WORKER_HOST=`cat /etc/volcano/worker.host | sed 's/$/&:2222/g' | sed 's/^/"/;s/$/"/' | tr "\n" ","`;
+                  export TF_CONFIG={\"cluster\":{\"ps\":[${PS_HOST}],\"worker\":[${WORKER_HOST}]},\"task\":{\"type\":\"ps\",\"index\":${VK_TASK_INDEX}},\"environment\":\"cloud\"};
+                  /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh 
+                  && /usr/sbin/sshd
+                  && su - alex -c " cd /home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/
+                  && CUDA_VISIBLE_DEVICES='' python '/home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/mnist_dist.py'
+                  --ps_hosts=${PS_HOST} --worker_hosts=${WORKER_HOST}
+                  --job_name=ps --task_index=0 > /home/alex/SothisAI/tensorflow/tf_task/TF_Task_666/tf-task-666.ps_0.log
+                    2>&1"
+              image: image.ac.com:5000/gpu/admin/tensorflow/tensorflow:1.13-py2.7-CUDA10.0
+              name: tensorflow
+              # ports,声明ssh通信时访问的端口号
+              ports:
+                - containerPort: 2222
+                  name: tfjob-port
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                  nvidia.com/gpu: "0"
+                requests:
+                  cpu: "2"
+                  memory: 4Gi
+                  nvidia.com/gpu: "0"
+              volumeMounts:
+              - mountPath: /home/alex
+                name: scriptpath
+              - mountPath: /etc/localtime
+                name: localtime
+                readOnly: true
+              - mountPath: /etc/sudoers.d/ai_sudo
+                name: sudoerv
+              - mountPath: /etc/passwd
+                name: passwdv
+              - mountPath: /etc/group
+                name: groupv
+              - mountPath: /etc/shadow
+                name: shadowv
+              - mountPath: /dev/shm
+                name: dshm
+          restartPolicy: Never
+          volumes:
+          - hostPath:
+              path: /home/alex
+              type: ""
+            name: scriptpath
+          - hostPath:
+              path: /etc/localtime
+              type: ""
+            name: localtime
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_sudoer
+              type: ""
+            name: sudoerv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_passwd
+              type: ""
+            name: passwdv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_group
+              type: ""
+            name: groupv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_shadow
+              type: ""
+            name: shadowv
+          - emptyDir:
+              medium: Memory
+            name: dshm
+    - replicas: 1
+      name: worker
+      # 当所有的Worker正常结束变成Completed状态，意味着整个Job正常结束
+      policies:
+        - event: TaskCompleted
+          action: CompleteJob
+      template:
+        spec:
+          containers:
+            # HOST声明ps和worker任务通信时采用的host,由svc插件创建
+            - command:
+                - /bin/sh
+                - -c
+                - PS_HOST=`cat /etc/volcano/ps.host | sed 's/$/&:2222/g' | sed 's/^/"/;s/$/"/' | tr "\n" ","`;
+                  WORKER_HOST=`cat /etc/volcano/worker.host | sed 's/$/&:2222/g' | sed 's/^/"/;s/$/"/' | tr "\n" ","`;
+                  export TF_CONFIG={\"cluster\":{\"ps\":[${PS_HOST}],\"worker\":[${WORKER_HOST}]},\"task\":{\"type\":\"ps\",\"index\":${VK_TASK_INDEX}},\"environment\":\"cloud\"};
+                  /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh
+                  && /usr/sbin/sshd
+                  && su - alex -c " cd /home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/
+                  && CUDA_VISIBLE_DEVICES='' python '/home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/mnist_dist.py'
+                  --ps_hosts=${PS_HOST} --worker_hosts=${WORKER_HOST}
+                  --job_name=worker --task_index=0 > /home/alex/SothisAI/tensorflow/tf_task/TF_Task_666/tf-task-666.worker_0.log
+                  2>&1"
+              image: image.ac.com:5000/gpu/admin/tensorflow/tensorflow:1.13-py2.7-CUDA10.0
+              name: tensorflow
+              # ports,声明ssh通信时访问的端口号
+              ports:
+                - containerPort: 2222
+                  name: tfjob-port
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                  nvidia.com/gpu: "1"
+                requests:
+                  cpu: "2"
+                  memory: 4Gi
+                  nvidia.com/gpu: "1"
+              volumeMounts:
+              - mountPath: /home/alex
+                name: scriptpath
+              - mountPath: /etc/localtime
+                name: localtime
+                readOnly: true
+              - mountPath: /etc/sudoers.d/ai_sudo
+                name: sudoerv
+              - mountPath: /etc/passwd
+                name: passwdv
+              - mountPath: /etc/group
+                name: groupv
+              - mountPath: /etc/shadow
+                name: shadowv
+              - mountPath: /dev/shm
+                name: dshm
+          restartPolicy: Never
+          volumes:
+          - hostPath:
+              path: /home/alex
+              type: ""
+            name: scriptpath
+          - hostPath:
+              path: /etc/localtime
+              type: ""
+            name: localtime
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_sudoer
+              type: ""
+            name: sudoerv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_passwd
+              type: ""
+            name: passwdv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_group
+              type: ""
+            name: groupv
+          - hostPath:
+              path: /home/alex/.ai_user_info/ai_shadow
+              type: ""
+            name: shadowv
+          - emptyDir:
+              medium: Memory
+            name: dshm

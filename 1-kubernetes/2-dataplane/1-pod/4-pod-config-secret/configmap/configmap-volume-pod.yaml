@@ -4,7 +4,7 @@ metadata:
   name: configmap-volume-pod
 spec:
   containers:
-    - name: test-container
+    - name: tensorflow-container
       image: busybox:1.28.4
       command: [ "/bin/sh", "-c", "ls /etc/config/" ]
       volumeMounts:

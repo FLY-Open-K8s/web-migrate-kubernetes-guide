@@ -3,11 +3,11 @@ docker run -d --name docker-volume-v -v /home:/data:ro,rslave nginx
 # 如果主机上没有/test目录，则默认创建此目录
 docker run -d --name docker-volume-v2 -v /test:/data nginx
 
-#[root@master-1 2-volume]# ll /test
-#ls: cannot access /test: No such file or directory
-#[root@master-1 2-volume]# docker run -d --name docker-volume-v2 -v /test:/data nginx
+#[root@master-1 2-volume]# ll /tensorflow
+#ls: cannot access /tensorflow: No such file or directory
+#[root@master-1 2-volume]# docker run -d --name docker-volume-v2 -v /tensorflow:/data nginx
 #f19739fa1f482f12d45a57a927a22061e6960175cc3b4d505629b0404d079440
-#[root@master-1 2-volume]# ll /test
+#[root@master-1 2-volume]# ll /tensorflow
 #total 0
 
 # 2. --mount格式

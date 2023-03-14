@@ -81,7 +81,7 @@ trivy:
   ignore_unfixed: false
   # skipUpdate The flag to enable or disable Trivy DB downloads from GitHub
   #
-  # You might want to enable this flag in test or CI/CD environments to avoid GitHub rate limiting issues.
+  # You might want to enable this flag in tensorflow or CI/CD environments to avoid GitHub rate limiting issues.
   # If the flag is enabled you have to download the `trivy-offline.tar.gz` archive manually, extract `trivy.db` and
   # `metadata.json` files and mount them in the `/home/scanner/.cache/trivy/db` path.
   skip_update: false

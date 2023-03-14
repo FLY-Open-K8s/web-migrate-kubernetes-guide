@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
     - image: Nginx
-      name: test-emptydir-memory
+      name: tensorflow-emptydir-memory
       volumeMounts:
         - mountPath: /cache
           name: cache-volume
