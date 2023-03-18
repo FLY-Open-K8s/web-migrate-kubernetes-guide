@@ -1,0 +1,123 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    containerIndex: "1"
+    containerType: worker
+    svcname: tf-horovod-02-alex-27543-w1
+    taskId: tf-horovod-02-alex-27543
+  name: tf-horovod-02-alex-27543-w1
+  namespace: alex
+spec:
+  activeDeadlineSeconds: 36000
+  backoffLimit: 0
+  completions: 1
+  parallelism: 1
+  selector:
+    matchLabels:
+      controller-uid: 89e4a641-d223-463c-adcc-58f9349d0e55
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        containerIndex: "1"
+        containerType: worker
+        controller-uid: 89e4a641-d223-463c-adcc-58f9349d0e55
+        job-name: tf-horovod-02-alex-27543-w1
+        svcname: tf-horovod-02-alex-27543-w1
+        taskId: tf-horovod-02-alex-27543
+      name: tf-horovod-02-alex-27543-w1
+      namespace: alex
+    spec:
+      activeDeadlineSeconds: 36000
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk
+          -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh &&/usr/sbin/sshd
+          ;echo '训练详情请查看worker0的日志！' >> /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/tf-horovod-02-alex-27543.worker_1.log&&
+          touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running&&sh
+          /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/podStatusCheck.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
+          tf-horovod-02-alex-27543-w1
+        image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
+        imagePullPolicy: IfNotPresent
+        name: tf-horovod-02-alex-27543-w1
+        ports:
+        - containerPort: 2222
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 8Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: 8Gi
+            nvidia.com/gpu: "1"
+        securityContext:
+          runAsUser: 0
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /home/alex
+          name: scriptpath
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /etc/sudoers.d/ai_sudo
+          name: sudoerv
+        - mountPath: /etc/passwd
+          name: passwdv
+        - mountPath: /etc/group
+          name: groupv
+        - mountPath: /etc/shadow
+          name: shadowv
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /etc/tmp
+          name: tmpv
+        - mountPath: /usr/bin/kubectl
+          name: kubecntr
+      dnsPolicy: Default
+      nodeSelector:
+        resourceGroup: normal
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 5
+      volumes:
+      - hostPath:
+          path: /home/alex
+          type: ""
+        name: scriptpath
+      - hostPath:
+          path: /etc/localtime
+          type: ""
+        name: localtime
+      - hostPath:
+          path: /home/alex/.ai_user_info/ai_sudoer
+          type: ""
+        name: sudoerv
+      - hostPath:
+          path: /home/alex/.ai_user_info/ai_passwd
+          type: ""
+        name: passwdv
+      - hostPath:
+          path: /home/alex/.ai_user_info/ai_group
+          type: ""
+        name: groupv
+      - hostPath:
+          path: /home/alex/.ai_user_info/ai_shadow
+          type: ""
+        name: shadowv
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - hostPath:
+          path: /etc/tmp
+          type: ""
+        name: tmpv
+      - hostPath:
+          path: /usr/bin/kubectl
+          type: ""
+        name: kubecntr
