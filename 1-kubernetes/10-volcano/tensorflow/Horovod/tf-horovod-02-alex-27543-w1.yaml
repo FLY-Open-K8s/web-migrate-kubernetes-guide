@@ -35,10 +35,10 @@ spec:
         - /bin/sh
         - -c
         - /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk
-          -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh &&/usr/sbin/sshd
-          ;echo '训练详情请查看worker0的日志！' >> /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/tf-horovod-02-alex-27543.worker_1.log&&
-          touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running&&sh
-          /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/podStatusCheck.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
+          -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh &&/usr/sbin/sshd;
+          echo '训练详情请查看worker0的日志！' >> /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/tf-horovod-02-alex-27543.worker_1.log
+          && touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
+          && sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/podStatusCheck.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
           tf-horovod-02-alex-27543-w1
         image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
         imagePullPolicy: IfNotPresent
