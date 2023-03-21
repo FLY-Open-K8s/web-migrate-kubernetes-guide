@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: horovod-volcano-sothisai
 spec:
-  minAvailable: 1
+#  minAvailable: 1
   schedulerName: volcano
   # 作业插件机制
   plugins:
@@ -20,6 +20,10 @@ spec:
   # 作业的task角色
   tasks:
     - replicas: 1
+      # dependsOn 用于指定当前Task所依赖的Task列表
+      dependsOn:
+        name:
+        - "w1"
       name: w0
       policies:
         - event: TaskCompleted
@@ -38,12 +42,12 @@ spec:
                   -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh 
                   && /usr/sbin/sshd
                   && su - alex -c " touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_0.log"  
-                  && sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-single_01/exec.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-single_01/.running 0
+                  && sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/exec.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running 1
                   && su - alex -c "cd /home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/
-                  && horovodrun -np 1 -H $VC_W0_HOSTS:1
+                  && horovodrun -np 2 -H $VC_W0_HOSTS:1,$VC_W1_HOSTS:1
                   python '/home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/mnist_horovod.py'
                   > /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_0.log
-                  2>&1"; rm -rf /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-single_01/.running
+                  2>&1"; rm -rf /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
               image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
               name: w0
               # ports,声明ssh通信时访问的端口号
@@ -53,11 +57,11 @@ spec:
               resources:
                 limits:
                   cpu: "1"
-                  memory: 8Gi
+                  memory: 2Gi
                   nvidia.com/gpu: "1"
                 requests:
                   cpu: "1"
-                  memory: 8Gi
+                  memory: 2Gi
                   nvidia.com/gpu: "1"
               volumeMounts:
                 - mountPath: /home/alex
@@ -118,95 +122,95 @@ spec:
                 path: /usr/bin/kubectl
                 type: ""
               name: kubecntr
-#    - replicas: 1
-#      name: w1
-#      template:
-#        metadata:
-#          labels:
-#            containerIndex: "1"
-#            containerType: worker
-#        spec:
-#          containers:
-#            # worker任务通信时采用的host,由svc插件创建
-#            - command:
-#              - /bin/sh
-#              - -c
-#              - /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh
-#               && /usr/sbin/sshd
-#               && su - alex -c " touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_1.log"
-#               && echo '训练详情请查看worker0的日志！' >> /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_1.log
-#               && sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/podStatusCheck.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running $VC_W1_HOSTS
-#              image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
-#              name: w1
-#              # ports,声明ssh通信时访问的端口号
-#              ports:
-#                - containerPort: 2222
-#                  name: w1-port
-#              resources:
-#                limits:
-#                  cpu: "2"
-#                  memory: 4Gi
-#                  nvidia.com/gpu: "1"
-#                requests:
-#                  cpu: "2"
-#                  memory: 4Gi
-#                  nvidia.com/gpu: "1"
-#              volumeMounts:
-#                - mountPath: /home/alex
-#                  name: scriptpath
-#                - mountPath: /etc/localtime
-#                  name: localtime
-#                  readOnly: true
-#                - mountPath: /etc/sudoers.d/ai_sudo
-#                  name: sudoerv
-#                - mountPath: /etc/passwd
-#                  name: passwdv
-#                - mountPath: /etc/group
-#                  name: groupv
-#                - mountPath: /etc/shadow
-#                  name: shadowv
-#                - mountPath: /dev/shm
-#                  name: dshm
-#                - mountPath: /etc/tmp
-#                  name: tmpv
-#                - mountPath: /usr/bin/kubectl
-#                  name: kubecntr
-#          nodeSelector:
-#            resourceGroup: normal
-#          restartPolicy: Never
-#          volumes:
-#            - hostPath:
-#                path: /home/alex
-#                type: ""
-#              name: scriptpath
-#            - hostPath:
-#                path: /etc/localtime
-#                type: ""
-#              name: localtime
-#            - hostPath:
-#                path: /home/alex/.ai_user_info/ai_sudoer
-#                type: ""
-#              name: sudoerv
-#            - hostPath:
-#                path: /home/alex/.ai_user_info/ai_passwd
-#                type: ""
-#              name: passwdv
-#            - hostPath:
-#                path: /home/alex/.ai_user_info/ai_group
-#                type: ""
-#              name: groupv
-#            - hostPath:
-#                path: /home/alex/.ai_user_info/ai_shadow
-#                type: ""
-#              name: shadowv
-#            - emptyDir:
-#                medium: Memory
-#              name: dshm
-#            - hostPath:
-#                path: /etc/tmp
-#                type: ""
-#              name: tmpv
-#            - hostPath:
-#                path: /usr/bin/kubectl
-#                type: ""
-#              name: kubecntr
+    - replicas: 1
+      name: w1
+      template:
+        metadata:
+          labels:
+            containerIndex: "1"
+            containerType: worker
+        spec:
+          containers:
+            # worker任务通信时采用的host,由svc插件创建
+            - command:
+              - /bin/sh
+              - -c
+              - /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh
+               && /usr/sbin/sshd
+               && su - alex -c " touch /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_1.log"
+               && echo '训练详情请查看worker0的日志！' >> /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/horovod-volcano-sothisai.worker_1.log
+               && sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/podStatusCheck.sh /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running $VC_W1_HOSTS
+              image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
+              name: w1
+              # ports,声明ssh通信时访问的端口号
+              ports:
+                - containerPort: 2222
+                  name: w1-port
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 2Gi
+                  nvidia.com/gpu: "1"
+                requests:
+                  cpu: "1"
+                  memory: 2Gi
+                  nvidia.com/gpu: "1"
+              volumeMounts:
+                - mountPath: /home/alex
+                  name: scriptpath
+                - mountPath: /etc/localtime
+                  name: localtime
+                  readOnly: true
+                - mountPath: /etc/sudoers.d/ai_sudo
+                  name: sudoerv
+                - mountPath: /etc/passwd
+                  name: passwdv
+                - mountPath: /etc/group
+                  name: groupv
+                - mountPath: /etc/shadow
+                  name: shadowv
+                - mountPath: /dev/shm
+                  name: dshm
+                - mountPath: /etc/tmp
+                  name: tmpv
+                - mountPath: /usr/bin/kubectl
+                  name: kubecntr
+          nodeSelector:
+            resourceGroup: normal
+          restartPolicy: Never
+          volumes:
+            - hostPath:
+                path: /home/alex
+                type: ""
+              name: scriptpath
+            - hostPath:
+                path: /etc/localtime
+                type: ""
+              name: localtime
+            - hostPath:
+                path: /home/alex/.ai_user_info/ai_sudoer
+                type: ""
+              name: sudoerv
+            - hostPath:
+                path: /home/alex/.ai_user_info/ai_passwd
+                type: ""
+              name: passwdv
+            - hostPath:
+                path: /home/alex/.ai_user_info/ai_group
+                type: ""
+              name: groupv
+            - hostPath:
+                path: /home/alex/.ai_user_info/ai_shadow
+                type: ""
+              name: shadowv
+            - emptyDir:
+                medium: Memory
+              name: dshm
+            - hostPath:
+                path: /etc/tmp
+                type: ""
+              name: tmpv
+            - hostPath:
+                path: /usr/bin/kubectl
+                type: ""
+              name: kubecntr

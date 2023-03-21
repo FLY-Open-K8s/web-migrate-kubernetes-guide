@@ -9,7 +9,7 @@ spec:
   plugins:
     # env插件，提供任务索引。如下面Commond中的VK_TASK_INDEX
     env: []
-    # SVC插件，支持作业内pod间互访，并提供访问地址。如下面Commond中的ps.host和worker.host
+    # SVC插件，支持作业内pod间互访，并提供访问地址。
     svc: []
     ssh: []
   # 异常场景处理：当有任意一个Pod被驱逐时，它处理的方式都是重启整个Job
