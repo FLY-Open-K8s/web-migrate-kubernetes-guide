@@ -17,13 +17,11 @@ spec:
     - event: PodEvicted
       action: RestartJob
   queue: default
+  # 作业生存时间(单位：秒)
+  ttlSecondsAfterFinished: 3600
   # 作业的task角色
   tasks:
     - replicas: 1
-      # dependsOn 用于指定当前Task所依赖的Task列表
-#      dependsOn:
-#        name:
-#        - "w1"
       name: w0
       policies:
         - event: TaskCompleted
@@ -46,10 +44,10 @@ spec:
                   && export VC_W0_IP=${VC_W0_IP} >> /etc/profile  && export VC_W1_IP=${VC_W1_IP} >> /etc/profile  && source /etc/profile
                   && /usr/sbin/sshd
                   && su - alex -c " touch /home/alex/SothisAI/tensorflow/tf_task/Volcano_Horovod_01/horovod-volcano-sothisai.worker_0.log"  
-                  && su - alex -c " touch /home/alex/SothisAI/tensorflow/tf_task/Volcano_Horovod_01/.running"  
                   && sh /home/alex/SothisAI/tensorflow/tf_task/Volcano_Horovod_01/exec.sh /home/alex/SothisAI/tensorflow/tf_task/Volcano_Horovod_01/.running 1
                   && su - alex -c "cd /home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/
                   && horovodrun -np 2 -H ${VC_W0_IP}:1,${VC_W1_IP}:1 python '/home/alex/sothisai_2.8.0_example_scripts/tensorflow_test/tf_train/mnist_horovod.py' > /home/alex/SothisAI/tensorflow/tf_task/Volcano_Horovod_01/horovod-volcano-sothisai.worker_0.log 2>&1"
+                  ; rm -rf /home/alex/SothisAI/tensorflow/tf_task/TF_Horovod-02/.running
               image: image.ac.com:5000/gpu/admin/tfhorovod/tensorflow:1.15-cuda11.8-py3.8-gloo
               name: w0
               # ports,声明ssh通信时访问的端口号
@@ -137,9 +135,7 @@ spec:
             - command:
               - /bin/sh
               - -c
-              - VC_W0_NAME=`echo $VC_W0_HOSTS | awk -F. '{print $1}'`
-                &&  VC_W1_NAME=`echo $VC_W1_HOSTS | awk -F. '{print $1}'`
-                && VC_W0_IP=`su - alex -c "kubectl -n alex get pod  $VC_W0_NAME --output=jsonpath={.status.podIP}"`
+              - VC_W1_NAME=`echo $VC_W1_HOSTS | awk -F. '{print $1}'`
                 && VC_W1_IP=`su - alex -c "kubectl -n alex get pod  $VC_W1_NAME --output=jsonpath={.status.podIP}"`
                 && /bin/cat /proc/1/environ| /usr/bin/tr '\0' '\n' | grep -v HOME | /usr/bin/awk -v ex='export ' '{printf ex;print $1}'> /etc/profile.d/sothisai.sh
                 && export VC_W0_IP=${VC_W0_IP} >> /etc/profile  && export VC_W1_IP=${VC_W1_IP} >> /etc/profile  && source /etc/profile
